@@ -137,12 +137,12 @@ h1{font-family:'Assistant',sans-serif;font-size:1.3rem;font-weight:900;line-heig
 @media(min-width:380px){.ti span{font-size:.56rem}}
 
 /* STICKY */
-.sticky{position:fixed;bottom:0;left:0;right:0;width:100%;background:var(--white);border-top:1px solid var(--border);padding:9px 14px;padding-bottom:calc(9px + env(safe-area-inset-bottom,0px));display:none;align-items:center;justify-content:space-between;z-index:300;box-shadow:0 -3px 16px rgba(0,0,0,.08);gap:8px}
+.sticky{position:fixed;bottom:0;left:0;right:0;width:100%;background:var(--white);border-top:1px solid var(--border);padding:7px 14px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px));display:none;align-items:center;justify-content:space-between;z-index:300;box-shadow:0 -3px 16px rgba(0,0,0,.08);gap:8px}
 .sticky-prices{display:flex;flex-direction:column}
 .sticky-was{font-size:.62rem;color:var(--ink3);text-decoration:line-through;line-height:1}
 .sticky-now{font-size:1rem;font-weight:700;color:var(--ink);line-height:1.2}
 .sp-label{font-size:.61rem;color:var(--ink3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:50vw}
-.sticky-btn{background:var(--rose);color:#fff;font-weight:700;font-size:.72rem;padding:10px 12px;border-radius:var(--r);border:none;cursor:pointer;flex-shrink:0;line-height:1.3;text-align:center;max-width:200px}
+.sticky-btn{background:var(--rose);color:#fff;font-weight:700;font-size:.68rem;padding:9px 10px;border-radius:var(--r);border:none;cursor:pointer;flex-shrink:0;line-height:1.25;text-align:center;max-width:190px}
 
 /* SECTIONS */
 .sec{padding:24px 14px;width:100%}
@@ -261,7 +261,7 @@ h1{font-family:'Assistant',sans-serif;font-size:1.3rem;font-weight:900;line-heig
 .cookie-close{background:var(--rose);color:#fff;border:none;border-radius:6px;padding:7px 12px;font-size:.72rem;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap}
 
 /* WA FLOAT */
-.wa-float{position:fixed;bottom:82px;right:16px;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.5);z-index:299;text-decoration:none;overflow:hidden;background:#25D366}
+.wa-float{position:fixed;bottom:72px;right:16px;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.5);z-index:299;text-decoration:none;overflow:hidden;background:#25D366}
 .wa-float img{width:52px;height:52px;object-fit:cover;border-radius:50%}
 
 .spacer{height:62px}
@@ -585,9 +585,33 @@ function pick(n){
 }
 
 // TERMS
-function openTerms(){document.getElementById('termsOverlay').classList.add('show')}
+function openTerms(){
+  document.getElementById('termsOverlay').classList.add('show');
+  // GA4 event
+  if(typeof gtag !== 'undefined'){
+    gtag('event', 'begin_checkout', {
+      currency: 'ILS',
+      value: sel === 1 ? 249 : 299,
+      items: [{
+        item_name: sel === 1 ? 'Lunic Steam' : 'ערכת הגיהוץ המלאה',
+        price: sel === 1 ? 249 : 299,
+        quantity: 1
+      }]
+    });
+  }
+}
 function closeTerms(){document.getElementById('termsOverlay').classList.remove('show')}
-document.getElementById('agreeBtn').addEventListener('click',function(){closeTerms();window.location.href=data[sel].url;});
+document.getElementById('agreeBtn').addEventListener('click',function(){
+  closeTerms();
+  if(typeof gtag !== 'undefined'){
+    gtag('event', 'initiated_checkout', {
+      currency: 'ILS',
+      value: sel === 1 ? 249 : 299,
+      item_name: sel === 1 ? 'Lunic Steam' : 'ערכת הגיהוץ המלאה'
+    });
+  }
+  window.location.href=data[sel].url;
+});
 document.getElementById('termsOverlay').addEventListener('click',function(e){if(e.target===this)closeTerms()});
 
 // FAQ
@@ -605,6 +629,15 @@ window.addEventListener('scroll',function(){
 });
 
 // COUNTDOWN
+// GA4 — view product page
+if(typeof gtag !== 'undefined'){
+  gtag('event', 'view_item', {
+    currency: 'ILS',
+    value: 299,
+    items: [{ item_name: 'Lunic Steam', price: 299 }]
+  });
+}
+
 function updateCountdown(){
   var now=new Date(),mid=new Date(now);mid.setHours(24,0,0,0);
   var d=Math.floor((mid-now)/1000);if(d<0)d=0;
@@ -653,6 +686,21 @@ function closeExit(){document.getElementById('exitOverlay').classList.remove('sh
 document.getElementById('exitOverlay').addEventListener('click',function(e){if(e.target===this)closeExit();});
 
 // COOKIE
+// Position WA float above sticky
+function updateWaFloat(){
+  var sticky = document.getElementById('stickyBar');
+  var wa = document.querySelector('.wa-float');
+  if(wa && sticky && sticky.style.display === 'flex'){
+    wa.style.bottom = (sticky.offsetHeight + 10) + 'px';
+  } else if(wa){
+    wa.style.bottom = '20px';
+  }
+}
+var stickyObs = new MutationObserver(updateWaFloat);
+var stickyEl = document.getElementById('stickyBar');
+if(stickyEl) stickyObs.observe(stickyEl, {attributes:true, attributeFilter:['style']});
+window.addEventListener('resize', updateWaFloat);
+
 (function(){
   if(!localStorage.getItem('cookieOk')){
     setTimeout(function(){var b=document.getElementById('cookieBar');b.classList.add('show');setTimeout(function(){closeCookie();},4000);},600);
